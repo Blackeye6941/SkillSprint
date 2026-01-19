@@ -15,7 +15,9 @@ app.post('/generate', async(req, res) => {
 	//res.json(prompt);
 	try {
 		const result = await generateRoadmap({prompt});
-		res.json(result);
+		if(result){
+			res.json({"message": "Check the roadmap list"});
+		}
 	} catch (error) {
 		res.console.error(error);
 		
