@@ -4,14 +4,22 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
 	res.send("<h1>SkillSprint Backend</h1>");
 });
 
-app.post('/generate', (req, res) => {	
-	const prompt = req.body;
-	generateRoadmap(prompt);
+app.post('/generate', async(req, res) => {	
+	const prompt = req.body.query;
+	//res.json(prompt);
+	try {
+		const result = await generateRoadmap({prompt});
+		res.json(result);
+	} catch (error) {
+		res.console.error(error);
+		
+	}
 });
 
 app.listen(PORT, () => {

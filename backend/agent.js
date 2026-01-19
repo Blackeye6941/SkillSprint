@@ -10,7 +10,8 @@ async function generateRoadmap({prompt}){
 			responseSchema: formSchema
 		}
 	});
-	console.log(res.text);
+	//console.log(res.text);
+	return res.text;
 };
 
 module.exports = {generateRoadmap};
