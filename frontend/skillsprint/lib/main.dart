@@ -32,135 +32,179 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<Map<String, String>> messages = [];
   final TextEditingController _controller = TextEditingController();
 
+  bool showWelcome = true;
+
   void sendMessage() {
     if (_controller.text.trim().isEmpty) return;
+
     setState(() {
+      if (showWelcome) {
+        showWelcome = false;
+      }
+
       messages.add({'role': 'user', 'text': _controller.text});
-      messages.add({'role': 'bot', 'text': 'This is a sample SkillSprint reply 🤖'});
+
+      messages.add({
+        'role': 'bot',
+        'text': 'Great goal! I’m creating a learning plan for you 🚀',
+      });
+
       _controller.clear();
     });
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text('SkillSprint'),
-      centerTitle: true,
-    ),
-    body: Column(
-      children: [
-        // Chat messages
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: messages.length,
-            itemBuilder: (context, index) {
-              final message = messages[index];
-              final isUser = message['role'] == 'user';
-              return Align(
-                alignment:
-                    isUser ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? Colors.tealAccent.shade100
-                        : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    message['text'] ?? '',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              );
-            },
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+          'SkillSprint',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.3,
+            color: Colors.blue,
           ),
         ),
+      ),
+      body: Column(
+        children: [
+          // MAIN CONTENT
+          Expanded(
+            child: showWelcome ? _buildWelcomeScreen() : _buildChatList(),
+          ),
 
-        const SizedBox(height: 12),
-
-        // Text input field with mic disappearing while typing
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-          child: TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              hintText: 'Type your message...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-
-              // Icons inside the text field
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Voice button: only visible if text field is empty
-                  if (_controller.text.isEmpty)
+          // INPUT FIELD WITH MIC + SEND
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: 'Type your goal...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_controller.text.isEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.mic, color: Colors.teal),
+                        onPressed: () {
+                          // TODO: voice input
+                        },
+                      ),
                     IconButton(
-                      icon: const Icon(Icons.mic, color: Colors.teal),
-                      onPressed: () {
-                        // TODO: Add voice recording action
-                      },
+                      icon: const Icon(Icons.send, color: Colors.teal),
+                      onPressed: sendMessage,
                     ),
-
-                  // Send button: always visible
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Colors.teal),
-                    onPressed: sendMessage,
-                  ),
-                ],
+                  ],
+                ),
               ),
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => sendMessage(),
             ),
-            onChanged: (text) {
-              setState(() {}); // rebuild to update mic visibility
-            },
           ),
-        ),
 
-        const SizedBox(height: 16),
-
-        // Two options below text field
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: Add Option 1 action
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          // BOTTOM BUTTONS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    // TODO: open goals / menu
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: const Icon(Icons.menu, size: 28),
                 ),
-                child: const Icon(Icons.menu, size: 28),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: Add Option 2 action
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                ElevatedButton(
+                  onPressed: () {
+                    // TODO: navigate home / progress
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: const Icon(Icons.home, size: 28),
                 ),
-                child: const Icon(Icons.home, size: 28),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        const SizedBox(height: 12),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- WELCOME SCREEN ----------------
+  Widget _buildWelcomeScreen() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.flash_on, size: 70, color: Colors.teal),
+            SizedBox(height: 20),
+            Text(
+              '👋 Hi! I’m SkillSprint',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Tell me what skill you want to learn.\nI’ll create a step-by-step plan for you 🎯',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- CHAT LIST ----------------
+  Widget _buildChatList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[index];
+        final isUser = message['role'] == 'user';
+
+        return Align(
+          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isUser
+                  ? const Color.fromARGB(255, 167, 195, 255)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              message['text'] ?? '',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
