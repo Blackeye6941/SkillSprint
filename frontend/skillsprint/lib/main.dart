@@ -21,6 +21,8 @@ class SkillSprint extends StatelessWidget {
   }
 }
 
+// ================= CHAT SCREEN =================
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -33,23 +35,33 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
 
   bool showWelcome = true;
+  bool isListening = false;
 
   void sendMessage() {
     if (_controller.text.trim().isEmpty) return;
 
     setState(() {
-      if (showWelcome) {
-        showWelcome = false;
-      }
+      showWelcome = false;
 
       messages.add({'role': 'user', 'text': _controller.text});
-
       messages.add({
         'role': 'bot',
         'text': 'Great goal! I’m creating a learning plan for you 🚀',
       });
 
       _controller.clear();
+      isListening = false;
+    });
+  }
+
+  void toggleListening() {
+    setState(() {
+      isListening = !isListening;
+
+      // Simulated voice input
+      if (isListening) {
+        _controller.text = "I want to learn Flutter";
+      }
     });
   }
 
@@ -70,35 +82,30 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // MAIN CONTENT
           Expanded(
             child: showWelcome ? _buildWelcomeScreen() : _buildChatList(),
           ),
 
-          // INPUT FIELD WITH MIC + SEND
+          // INPUT FIELD (TEXT + VOICE)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: 'Type your goal...',
+                hintText: 'Type or speak your goal...',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_controller.text.isEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.mic, color: Colors.teal),
-                        onPressed: () {
-                          // TODO: voice input
-                        },
+                    IconButton(
+                      icon: Icon(
+                        isListening ? Icons.mic_off : Icons.mic,
+                        color: isListening ? Colors.red : Colors.teal,
                       ),
+                      onPressed: toggleListening,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.send, color: Colors.teal),
                       onPressed: sendMessage,
@@ -106,7 +113,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
-              onChanged: (_) => setState(() {}),
               onSubmitted: (_) => sendMessage(),
             ),
           ),
@@ -119,7 +125,12 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: open goals / menu
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GoalsScreen(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
@@ -130,9 +141,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: const Icon(Icons.menu, size: 28),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: navigate home / progress
-                  },
+                  onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                     shape: RoundedRectangleBorder(
@@ -151,7 +160,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ---------------- WELCOME SCREEN ----------------
+  // ================= WELCOME SCREEN =================
+
   Widget _buildWelcomeScreen() {
     return Center(
       child: Padding(
@@ -178,7 +188,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ---------------- CHAT LIST ----------------
+  // ================= CHAT LIST =================
+
   Widget _buildChatList() {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -205,6 +216,67 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+// ================= GOALS SCREEN =================
+
+class GoalsScreen extends StatelessWidget {
+  const GoalsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> goals = [
+      {'title': 'Learn Flutter', 'progress': 0.75},
+      {'title': 'UI/UX Design', 'progress': 0.45},
+      {'title': 'DSA Practice', 'progress': 0.9},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Goals'), centerTitle: true),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: goals.length,
+        itemBuilder: (context, index) {
+          final goal = goals[index];
+          final progress = goal['progress'];
+
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    goal['title'],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${(progress * 100).toInt()}% completed',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
