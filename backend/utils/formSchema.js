@@ -200,5 +200,5 @@ const formSchema = {
   ],
 };
 
-exports.modules = formSchema;
+module.export = formSchema;
 
