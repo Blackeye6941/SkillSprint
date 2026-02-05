@@ -12,6 +12,6 @@ const webSearch = {
 	}
 };
 
-module.export = webSearch;
+module.exports = {webSearch};
 
 
