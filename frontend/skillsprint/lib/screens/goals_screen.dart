@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:math' as math;
+import 'roadmap_screen.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -9,9 +10,9 @@ class GoalsScreen extends StatefulWidget {
   State<GoalsScreen> createState() => _GoalsScreenState();
 }
 
-class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin {
+class _GoalsScreenState extends State<GoalsScreen>
+    with TickerProviderStateMixin {
   late AnimationController _floatController;
-  // Track which item is being hovered
   int? _hoveredIndex;
 
   @override
@@ -31,16 +32,36 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
 
   Map<String, dynamic> getCharacterTheme(double progress) {
     int p = (progress * 100).toInt();
-    if (p >= 100) return {'color': Colors.amber, 'img': 'assets/images/roger.png'};
-    if (p >= 90) return {'color': Colors.redAccent, 'img': 'assets/images/luffy.png'};
-    if (p >= 80) return {'color': Colors.greenAccent, 'img': 'assets/images/zoro.png'};
-    if (p >= 70) return {'color': Colors.blueAccent, 'img': 'assets/images/sanji.png'};
-    if (p >= 60) return {'color': Colors.blue, 'img': 'assets/images/jinbe.png'};
-    if (p >= 50) return {'color': Colors.purpleAccent, 'img': 'assets/images/robin.png'};
-    if (p >= 40) return {'color': Colors.white, 'img': 'assets/images/brook.png'};
-    if (p >= 30) return {'color': Colors.cyanAccent, 'img': 'assets/images/franky.png'};
-    if (p >= 20) return {'color': Colors.brown, 'img': 'assets/images/ussop.png'};
-    if (p >= 10) return {'color': Colors.pinkAccent, 'img': 'assets/images/chopper.png'};
+    if (p >= 100) {
+      return {'color': Colors.amber, 'img': 'assets/images/roger.png'};
+    }
+    if (p >= 90) {
+      return {'color': Colors.redAccent, 'img': 'assets/images/luffy.png'};
+    }
+    if (p >= 80) {
+      return {'color': Colors.greenAccent, 'img': 'assets/images/zoro.png'};
+    }
+    if (p >= 70) {
+      return {'color': Colors.blueAccent, 'img': 'assets/images/sanji.png'};
+    }
+    if (p >= 60) {
+      return {'color': Colors.blue, 'img': 'assets/images/jinbe.png'};
+    }
+    if (p >= 50) {
+      return {'color': Colors.purpleAccent, 'img': 'assets/images/robin.png'};
+    }
+    if (p >= 40) {
+      return {'color': Colors.white, 'img': 'assets/images/brook.png'};
+    }
+    if (p >= 30) {
+      return {'color': Colors.cyanAccent, 'img': 'assets/images/franky.png'};
+    }
+    if (p >= 20) {
+      return {'color': Colors.brown, 'img': 'assets/images/ussop.png'};
+    }
+    if (p >= 10) {
+      return {'color': Colors.pinkAccent, 'img': 'assets/images/chopper.png'};
+    }
     return {'color': Colors.orangeAccent, 'img': 'assets/images/nami.png'};
   }
 
@@ -65,11 +86,14 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        title: const Text(
+          'PROGRESS',
+          style: TextStyle(
+            letterSpacing: 4,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
         ),
-        title: const Text('PROGRESS', style: TextStyle(letterSpacing: 4, fontWeight: FontWeight.w900, color: Colors.white)),
         centerTitle: true,
       ),
       body: ListView.builder(
@@ -84,82 +108,101 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
           return MouseRegion(
             onEnter: (_) => setState(() => _hoveredIndex = index),
             onExit: (_) => setState(() => _hoveredIndex = null),
-            child: AnimatedBuilder(
-              animation: _floatController,
-              builder: (context, child) {
-                double offset = 5 * math.sin((_floatController.value + (index * 0.2)) * 2 * math.pi);
-                
-                return Transform.translate(
-                  offset: Offset(0, offset),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.only(bottom: 25),
-                    height: 110,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      // HOVER GRADIENT LOGIC
-                      gradient: isHovered 
-                        ? LinearGradient(
-                            colors: [
-                              theme['color'].withOpacity(0.2),
-                              theme['color'].withOpacity(0.05),
-                              Colors.transparent,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ) 
-                        : null,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RoadmapScreen(
+                      goalTitle: goal['title'],
+                      themeColor: theme['color'],
                     ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(25),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isHovered 
-                                      ? Colors.white.withOpacity(0.1) 
-                                      : Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(25),
-                                  border: Border.all(
-                                    color: isHovered 
-                                        ? theme['color'] 
-                                        : theme['color'].withOpacity(0.3),
-                                    width: isHovered ? 2 : 1,
+                  ),
+                );
+              },
+              child: AnimatedBuilder(
+                animation: _floatController,
+                builder: (context, child) {
+                  double offset =
+                      5 *
+                      math.sin(
+                        (_floatController.value + (index * 0.2)) * 2 * math.pi,
+                      );
+
+                  return Transform.translate(
+                    offset: Offset(0, offset),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.only(bottom: 25),
+                      height: 110,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(25),
+                        gradient: isHovered
+                            ? LinearGradient(
+                                colors: [
+                                  theme['color'].withOpacity(0.2),
+                                  theme['color'].withOpacity(0.05),
+                                  Colors.transparent,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(25),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isHovered
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: isHovered
+                                          ? theme['color']
+                                          : theme['color'].withOpacity(0.3),
+                                      width: isHovered ? 2 : 1,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              _buildProgressCharacter(progress, theme),
-                              const SizedBox(width: 25),
-                              Expanded(
-                                child: Text(
-                                  goal['title'].toUpperCase(),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: isHovered ? 19 : 18, // Subtle size pop
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.2,
-                                    fontStyle: FontStyle.italic,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                _buildProgressCharacter(progress, theme),
+                                const SizedBox(width: 25),
+                                Expanded(
+                                  child: Text(
+                                    goal['title'].toUpperCase(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: isHovered ? 19 : 18,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.2,
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           );
         },
@@ -190,29 +233,32 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                   color: theme['color'].withOpacity(0.4),
                   blurRadius: 12,
                   spreadRadius: 2,
-                )
+                ),
               ],
             ),
             child: ClipOval(
               child: Stack(
-                alignment: Alignment.center,
+                fit: StackFit.expand,
                 children: [
-                  Image.network(
+                  Image.asset(
                     theme['img'],
-                    fit: BoxFit.cover,
                     width: 65,
                     height: 65,
-                    errorBuilder: (c, e, s) => Container(color: Colors.black26),
+                    fit: BoxFit.cover,
                   ),
-                  Container(
-                    color: Colors.black.withOpacity(0.3),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${(progress * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: 22,
+                      color: Colors.black.withOpacity(0.55),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${(progress * 100).toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
