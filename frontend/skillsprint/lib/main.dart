@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/app_provider.dart';
+import 'theme/app_theme.dart';
 import 'screens/chat_screen.dart';
 
 void main() {
@@ -10,14 +13,18 @@ class SkillSprint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SkillSprint',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AppProvider()..initializeData(),
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'SkillSprint',
+        theme: AppTheme.darkTheme,
+        home: const ChatScreen(),
       ),
-      home: const ChatScreen(),
     );
   }
 }
