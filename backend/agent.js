@@ -6,15 +6,8 @@ const { tavily } = require("@tavily/core");
 require("dotenv").config();
 
 
-(async function generateRoadmap(){
-
-	const tavily_client = tavily({api_key : process.env.TAVILY_API_KEY});
-	
-	/*const config1 = {
-		tools: [{
-			functionDeclarations: [webSearch]
-		}],
-	};*/
+async function generateRoadmap({ prompt }) {
+	const tavily_client = tavily({ api_key: process.env.TAVILY_API_KEY });
 
 	const config = {
 		tools: [{
@@ -24,58 +17,61 @@ require("dotenv").config();
 		responseSchema: formSchema
 	};
 
-
-	const prompt = "Docker in 5 days with 1 hr per day"
-
 	const contents = [{
-    		role: 'user',
-    		parts: [{ text: `You are an excellent roadmap generator. Provide the user a good roadmap according to the prompt provided by the user ${prompt}.Provide A 100-200 word explanation for him to understand the concepts for each day. You can also add task to be done each day on that project. You can also add weekly projects and instructions for the user to practically understand the topics covered each week or each 1/2th day of the course. IMPORTANT: use the search_resources tool for resource generation for each day according to the day's topic and append it to resouce field`}]
-  	}];
-	console.log("First Api request");
+		role: 'user',
+		parts: [{ text: `You are an excellent roadmap generator. Provide the user a good roadmap according to the prompt provided by the user: ${prompt}. Provide A 100-200 word explanation for him to understand the concepts for each day. You can also add tasks to be done each day on that project. You can also add weekly projects and instructions for the user to practically understand the topics covered each week or each 1/2th day of the course. IMPORTANT: use the search_resources tool for resource generation for each day according to the day's topic and append it to resource field.` }]
+	}];
+
+	console.log("First Gemini API request initiated...");
 	const res = await model.models.generateContent({
-		model:"gemini-3-flash-preview",
+		model: "gemini-3-flash-preview",
 		contents: contents,
 		config: config
 	});
 
-	console.log(res); 
-	console.log("first Api req completed.. Web Search Initiated");
-	const toolCalls = res.candidates[0].content.parts.filter(p => p.functionCall);
-	let toolResponses = {};
-	 if(toolCalls.length > 0){
-		toolResponses = await Promise.all(toolCalls.map(async (call) => {
+	console.log("First Gemini API request completed.");
+	const candidateContent = res.candidates?.[0]?.content;
+	const parts = candidateContent?.parts || [];
+	const toolCalls = parts.filter(p => p.functionCall);
+
+	if (toolCalls.length > 0) {
+		console.log("Web Search Tool Calls detected. Initiating search...");
+		const toolResponses = await Promise.all(toolCalls.map(async (call) => {
 			const { name, args } = call.functionCall;
-			console.log(`Executing ${name} tool with args ${args.query}`)
+			console.log(`Executing ${name} tool with query: "${args.query}"`);
 			const searchResult = await tavily_client.search(args.query);
-			console.log(searchResult);
 			return {
 				name: name,
-				response: { content : searchResult}
+				response: { content: searchResult }
 			};
-		}));	
-	 }
-	 contents.push(res.candidates[0].content);
-	 const responseParts = toolResponses.map(res => ({
-    		functionResponse: {
-        		name: res.name,
-        		response: res.response
-    	 	}
-	 }));
+		}));
 
-	contents.push({ 
-    		role: 'user', 
-    		parts: responseParts 
-	});
-	 console.log("Websearch completed");	
-	 console.log("Second gemini api req!");
-	 const final_response = await model.models.generateContent({
-		 model: 'gemini-3-flash-preview',
- 		contents: contents,
- 		config: config
-	 });
+		contents.push(candidateContent);
+		const responseParts = toolResponses.map(tRes => ({
+			functionResponse: {
+				name: tRes.name,
+				response: tRes.response
+			}
+		}));
 
-	console.log(final_response.text);
+		contents.push({
+			role: 'user',
+			parts: responseParts
+		});
+
+		console.log("Tool execution completed. Second Gemini API request initiated...");
+		const final_response = await model.models.generateContent({
+			model: 'gemini-3-flash-preview',
+			contents: contents,
+			config: config
+		});
+
+		console.log("Second Gemini API request completed.");
+		return final_response.text;
+	}
+
 	return res.text;
-})();
+}
 
-//module.exports = {generateRoadmap};
+module.exports = { generateRoadmap };
+
