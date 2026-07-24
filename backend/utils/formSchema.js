@@ -182,10 +182,19 @@ const formSchema = {
         model: { type: Type.STRING },
         version: { type: Type.STRING },
       },
+      required: ["generated_at", "model", "version"],
       propertyOrdering: ["generated_at", "model", "version"],
     },
   },
-
+  required: [
+    "topic",
+    "total_days",
+    "overview",
+    "milestones",
+    "daily_plan",
+    "projects",
+    "assessment"
+  ],
   propertyOrdering: [
     "roadmap_id",
     "user_id",

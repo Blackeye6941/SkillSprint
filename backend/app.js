@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const connectDB = require('./config/db.js');
 const User = require('./models/User.js');
@@ -11,6 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'skillsprint_super_secret_jwt_key_2026';
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -121,17 +123,80 @@ app.post('/api/courses/generate', auth, async (req, res) => {
 		const rawJsonText = await generateRoadmap({ prompt: query });
 		const roadmapData = JSON.parse(rawJsonText);
 
+		let milestones = Array.isArray(roadmapData.milestones) ? roadmapData.milestones : [];
+		let daily_plan = Array.isArray(roadmapData.daily_plan) ? roadmapData.daily_plan : [];
+		let projects = Array.isArray(roadmapData.projects) ? roadmapData.projects : [];
+
+		// Handle case where Gemini returns an array of days directly
+		if (Array.isArray(roadmapData) && daily_plan.length === 0) {
+			daily_plan = roadmapData.map((d, i) => ({
+				day: d.day || i + 1,
+				title: d.title || d.topic || `Day ${i + 1}`,
+				description: d.description || d.explanation || '',
+				learning_objectives: d.learning_objectives || [d.title || d.topic || `Master Day ${i + 1} concepts`],
+				tasks: (d.tasks || []).map((t, tid) => typeof t === 'string' ? {
+					task_id: `t_${i+1}_${tid+1}`,
+					type: 'learning',
+					description: t,
+					estimated_time_minutes: 30,
+					completed: false
+				} : t),
+				resources: {
+					youtube: (d.resources || []).filter(r => typeof r === 'string' ? (r.includes('youtube') || r.includes('youtu.be')) : (r.url?.includes('youtube') || r.url?.includes('youtu.be'))).map(r => typeof r === 'string' ? { title: 'Video Tutorial', url: r } : r),
+					docs: (d.resources || []).filter(r => typeof r === 'string' ? (!r.includes('youtube') && !r.includes('youtu.be')) : (!r.url?.includes('youtube') && !r.url?.includes('youtu.be'))).map(r => typeof r === 'string' ? { title: 'Documentation', url: r } : r)
+				},
+				checkpoint: d.checkpoint || { type: 'self_check', criteria: `Complete all tasks for Day ${i + 1}` }
+			}));
+		}
+
+		// Auto-generate Milestones if empty
+		if (milestones.length === 0 && daily_plan.length > 0) {
+			milestones = [
+				{
+					milestone_id: "m1",
+					title: "Core Foundations",
+					goal: "Master foundational concepts and initial hands-on practice",
+					days: daily_plan.map(d => d.day)
+				}
+			];
+		}
+
+		// Auto-generate Projects if empty
+		if (projects.length === 0 && daily_plan.length > 0) {
+			projects = [
+				{
+					project_id: "p1",
+					title: `${query} Capstone Project`,
+					description: `Build a comprehensive practical project putting into practice all topics covered in this roadmap.`,
+					start_day: 1,
+					end_day: daily_plan.length,
+					deliverables: ["Functional project codebase", "Documentation and README"]
+				}
+			];
+		}
+
 		// Save Course in MongoDB linked directly to the authenticated user's ID
 		const newCourse = await Course.create({
 			userId: req.user.id,
 			topic: roadmapData.topic || query,
-			total_days: roadmapData.total_days,
-			overview: roadmapData.overview,
-			milestones: roadmapData.milestones,
-			daily_plan: roadmapData.daily_plan,
-			projects: roadmapData.projects,
-			assessment: roadmapData.assessment,
-			metadata: roadmapData.metadata
+			total_days: roadmapData.total_days || daily_plan.length,
+			overview: roadmapData.overview || {
+				summary: `Comprehensive roadmap covering ${query}`,
+				final_outcome: `Proficiency in ${query}`,
+				prerequisites: []
+			},
+			milestones,
+			daily_plan,
+			projects,
+			assessment: roadmapData.assessment || {
+				type: "final_project",
+				criteria: ["Completion of daily tasks", "Working project deliverable"]
+			},
+			metadata: roadmapData.metadata || {
+				generated_at: new Date().toISOString(),
+				model: "gemini-3-flash-preview",
+				version: "1.0.0"
+			}
 		});
 
 		res.status(201).json({
@@ -194,6 +259,73 @@ app.delete('/api/courses/:courseId', auth, async (req, res) => {
 
 		await course.deleteOne();
 		res.json({ success: true, message: "Course deleted successfully." });
+	} catch (error) {
+		res.status(500).json({ success: false, error: error.message });
+	}
+});
+
+// @route   PATCH /api/courses/:courseId/tasks/:taskId
+// @desc    Toggle completion status of a daily task (Protected & Authorized)
+app.patch('/api/courses/:courseId/tasks/:taskId', auth, async (req, res) => {
+	try {
+		const { courseId, taskId } = req.params;
+		const { completed } = req.body;
+
+		const course = await Course.findById(courseId);
+
+		if (!course) {
+			return res.status(404).json({ success: false, error: "Course not found." });
+		}
+
+		// 🔒 BACKEND OWNERSHIP SECURITY CHECK
+		if (course.userId.toString() !== req.user.id) {
+			return res.status(403).json({ success: false, error: "Access Denied: You do not own this course." });
+		}
+
+		let taskFound = null;
+
+		// Search across daily_plan tasks
+		for (const plan of course.daily_plan) {
+			if (plan.tasks && plan.tasks.length > 0) {
+				for (const task of plan.tasks) {
+					if (task.task_id === taskId || task._id?.toString() === taskId) {
+						task.completed = typeof completed === 'boolean' ? completed : !task.completed;
+						taskFound = task;
+						break;
+					}
+				}
+			}
+			if (taskFound) break;
+		}
+
+		if (!taskFound) {
+			return res.status(404).json({ success: false, error: `Task with ID '${taskId}' not found in this course.` });
+		}
+
+		await course.save();
+
+		// Calculate total progress
+		let totalTasks = 0;
+		let completedTasks = 0;
+		for (const plan of course.daily_plan) {
+			if (plan.tasks) {
+				totalTasks += plan.tasks.length;
+				completedTasks += plan.tasks.filter(t => t.completed).length;
+			}
+		}
+
+		const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+		res.json({
+			success: true,
+			message: `Task '${taskId}' completion set to ${taskFound.completed}`,
+			task: taskFound,
+			progress: {
+				totalTasks,
+				completedTasks,
+				progressPercent
+			}
+		});
 	} catch (error) {
 		res.status(500).json({ success: false, error: error.message });
 	}
